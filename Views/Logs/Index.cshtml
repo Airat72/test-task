@@ -1,0 +1,87 @@
+
+@{
+    Layout = null;  
+}
+
+<!DOCTYPE html>
+<html ng-app="logsApp" ng-controller="LogsController">
+<head>
+    <meta charset="utf-8" />
+    <title>Просмотр логов</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.8.1/ui-grid.min.css" rel="stylesheet" />
+
+    <style>
+        .grid {
+            width: 100%;
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Просмотр логов</h2>
+        <div ui-grid="gridOptions" ui-grid-pagination ui-grid-auto-resize class="grid"></div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/4.8.1/ui-grid.min.js"></script>
+
+    <script>
+        angular.module('logsApp', ['ui.grid', 'ui.grid.pagination', 'ui.grid.autoResize'])
+            .controller('LogsController', ['$scope', '$http', function ($scope, $http) {
+                $scope.gridOptions = {
+                    enableFiltering: true,
+                    paginationPageSizes: [10, 25, 50],
+                    paginationPageSize: 10,
+                    columnDefs: [
+                        { name: 'id', displayName: 'ID', width: 50 },
+                        { name: 'user', displayName: 'Пользователь' },
+                        { name: 'dateTime', displayName: 'Дата и время', cellFilter: 'date:"yyyy-MM-dd HH:mm:ss"' },
+                        { name: 'recordType', displayName: 'Тип записи' },
+                        { name: 'comment', displayName: 'Комментарий' },
+                        { name: 'logGuid', displayName: 'Log Guid' },
+                        { name: 'logGuidLinked', displayName: 'Связанный Log Guid' },
+                        { name: 'entity', displayName: 'Сущность' },
+                        { name: 'eventInfo', displayName: 'Информация о событии' },
+                        { name: 'fieldName', displayName: 'Имя поля' },
+                        { name: 'oldValue', displayName: 'Старое значение' },
+                        { name: 'newValue', displayName: 'Новое значение' }
+                    ],
+                    data: []
+                };
+
+                
+                $scope.loadData = function (filters) {
+                    $http.get('/Logs/GetLogs', { params: filters }).then(function (response) {
+                        $scope.gridOptions.data = response.data;
+                    }, function (error) {
+                        console.error('Ошибка при загрузке логов', error);
+                    });
+                };
+
+                
+                $scope.gridOptions.onRegisterApi = function (gridApi) {
+                    $scope.gridApi = gridApi;
+                    gridApi.core.on.filterChanged($scope, function () {
+                        var grid = this.grid;
+                        var filters = {};
+
+                        grid.columns.forEach(function (col) {
+                            var term = col.filters[0].term;
+                            if (term) {
+                                filters[col.field] = term;
+                            }
+                        });
+
+                        $scope.loadData(filters);
+                    });
+                };
+
+                
+                $scope.loadData({});
+            }]);
+    </script>
+</body>
+</html>
